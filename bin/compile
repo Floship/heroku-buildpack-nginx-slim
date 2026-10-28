@@ -31,7 +31,13 @@ echo '-----> nginx-buildpack-slim: Installed nginx without Ruby'
 echo '-----> nginx-buildpack-slim: Removing node_modules'
 find "$build_dir" -name 'node_modules' -type d -prune -print -exec rm -rf '{}' \;
 
-if [ "${FLOSHIP_INSTALL_HEROKU_CLI:-0}" = "1" ]; then
+install_heroku_cli="${FLOSHIP_INSTALL_HEROKU_CLI:-}"
+env_dir="${3:-}"
+if [ -z "${install_heroku_cli}" ] && [ -n "${env_dir}" ] && [ -f "${env_dir}/FLOSHIP_INSTALL_HEROKU_CLI" ]; then
+    install_heroku_cli=$(cat "${env_dir}/FLOSHIP_INSTALL_HEROKU_CLI")
+fi
+
+if [ "${install_heroku_cli}" = "1" ]; then
     cli_url='https://cli-assets.heroku.com/versions/9.5.1/1aaf605/heroku-v9.5.1-1aaf605-linux-x64.tar.xz'
     cli_sha256='ffc906cc7de50d78837fbc9aa706ceda2c3eabe7f9409b5509d253e7d9d621d5'
     cli_archive="${tmp}/heroku-cli.tar.xz"
