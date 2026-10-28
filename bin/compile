@@ -24,3 +24,31 @@ fi
 install -m 755 "$buildpack_dir/bin/start-nginx" "$build_dir/bin/start-nginx"
 
 echo '-----> nginx-buildpack-slim: Installed nginx without Ruby'
+
+# The app's Node dependencies are build-time inputs. Keeping them in the slug
+# adds hundreds of megabytes and no runtime value. This replaces the separate
+# heroku-buildpack-node-modules-cleanup buildpack.
+echo '-----> nginx-buildpack-slim: Removing node_modules'
+find "$build_dir" -name 'node_modules' -type d -prune -print -exec rm -rf '{}' \;
+
+if [ "${FLOSHIP_INSTALL_HEROKU_CLI:-0}" = "1" ]; then
+    cli_url='https://cli-assets.heroku.com/versions/9.5.1/1aaf605/heroku-v9.5.1-1aaf605-linux-x64.tar.xz'
+    cli_sha256='ffc906cc7de50d78837fbc9aa706ceda2c3eabe7f9409b5509d253e7d9d621d5'
+    cli_archive="${tmp}/heroku-cli.tar.xz"
+
+    echo '-----> nginx-buildpack-slim: Installing Heroku CLI for review app'
+    curl --fail --silent --show-error --retry 3 --retry-connrefused \
+        "${cli_url}" -o "${cli_archive}"
+    printf '%s  %s\n' "${cli_sha256}" "${cli_archive}" | sha256sum -c -
+
+    mkdir -p "${build_dir}/.heroku/cli" "${build_dir}/.heroku/bin" "${build_dir}/.profile.d"
+    tar -xJf "${cli_archive}" -C "${build_dir}/.heroku/cli" --strip-components 1
+    ln -sfn '../cli/bin/heroku' "${build_dir}/.heroku/bin/heroku"
+    cat >"${build_dir}/.profile.d/heroku-cli.sh" <<'PROFILE'
+export PATH="$PATH:$HOME/.heroku/bin"
+export HEROKU_SKIP_ANALYTICS=1
+export HEROKU_DISABLE_AUTOUPDATE=1
+PROFILE
+    chmod +x "${build_dir}/.profile.d/heroku-cli.sh"
+    "${build_dir}/.heroku/bin/heroku" version
+fi
