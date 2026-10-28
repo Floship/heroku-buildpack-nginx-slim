@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+build_dir=$1
+buildpack_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+stack=${STACK:-heroku-26}
+arch=$(dpkg --print-architecture)
+tarball="${buildpack_dir}/nginx-${stack}-${arch}.tgz"
+
+if [ ! -f "$tarball" ]; then
+    echo "nginx-buildpack: unsupported stack/architecture: ${stack}/${arch}" >&2
+    exit 1
+fi
+
+tmp=$(mktemp -d -t nginx-buildpack.XXXXXXXXXX)
+trap 'rm -rf -- "$tmp"' EXIT
+tar -xzf "$tarball" -C "$tmp"
+
+mkdir -p "$build_dir/bin" "$build_dir/config"
+install -m 755 "$tmp/nginx" "$build_dir/bin/nginx"
+if [ ! -f "$build_dir/config/mime.types" ]; then
+    install -m 644 "$tmp/mime.types" "$build_dir/config/mime.types"
+fi
+install -m 755 "$buildpack_dir/bin/start-nginx" "$build_dir/bin/start-nginx"
+
+echo '-----> nginx-buildpack-slim: Installed nginx without Ruby'
