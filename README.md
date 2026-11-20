@@ -17,3 +17,4 @@ slug for review-app postdeploy commands. Other apps skip the CLI.
 The nginx binary and `mime.types` come from
 [`heroku/heroku-buildpack-nginx`](https://github.com/heroku/heroku-buildpack-nginx)
 and remain under their upstream license.
+The Heroku-26 AMD64 archive is from [Heroku Nginx buildpack v1.22](https://github.com/heroku/heroku-buildpack-nginx/tree/v1.22) and contains Nginx 1.30.7.
